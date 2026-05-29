@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生態檢核入門到實務操作 - 自主學習系統</title>
+    <style>
+        /* ================= CSS 變數與主題 ================= */
+        :root {
+            --primary: #2C5F2D; /* 森林綠 */
+            --primary-light: #97BC62;
+            --primary-dark: #1e421f;
+            --secondary: #1C3F60; /* 深藍 */
+            --bg-body: #F4F1EA; /* 米白 */
+            --bg-card: #FFFFFF;
+            --bg-sidebar: #22252A;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --text-sidebar: #E8E8E8;
+            --alert-bg: #FEECE8;
+            --alert-border: #E07A5F;
+            --alert-text: #B03A2E;
+            --success: #27AE60;
+            --border: #E0E0E0;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+            --transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] {
+            --primary: #97BC62;
+            --primary-light: #2C5F2D;
+            --primary-dark: #b8d492;
+            --secondary: #4A7C59;
+            --bg-body: #18191A;
+            --bg-card: #242526;
+            --bg-sidebar: #121212;
+            --text-main: #E4E6EB;
+            --text-muted: #B0B3B8;
+            --text-sidebar: #E4E6EB;
+            --alert-bg: #3A2622;
+            --alert-border: #E07A5F;
+            --alert-text: #FFA08B;
+            --success: #4CAF50;
+            --border: #3A3B3C;
+            --shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* ================= 基礎設定 ================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; transition: var(--transition); }
+        h1, h2, h3, h4 { color: var(--secondary); margin-bottom: 0.5rem; }
+        [data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3, [data-theme="dark"] h4 { color: var(--primary); }
+        a { color: var(--primary); text-decoration: none; }
+        ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+        p { line-height: 1.6; margin-bottom: 1rem; }
+
+        /* ================= 佈局 ================= */
+        .sidebar { width: 300px; background-color: var(--bg-sidebar); color: var(--text-sidebar); display: flex; flex-direction: column; transition: var(--transition); z-index: 100;}
+        .sidebar-header { padding: 1.5rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header h2 { color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem; }
+        
+        .progress-container { margin-top: 1rem; }
+        .progress-text { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.3rem; }
+        .progress-bar-bg { width: 100%; height: 8px; background-color: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background-color: var(--primary-light); width: 0%; transition: width 0.5s ease; }
+
+        .nav-list { flex: 1; overflow-y: auto; padding: 1rem 0; list-style: none; margin: 0; }
+        .nav-item { padding: 0.8rem 1.5rem; cursor: pointer; display: flex; align-items: center; border-left: 4px solid transparent; transition: var(--transition); font-size: 0.95rem; color: #aaa; }
+        .nav-item:hover { background-color: rgba(255,255,255,0.05); color: #fff; }
+        .nav-item.active { border-left-color: var(--primary-light); background-color: rgba(255,255,255,0.1); color: #fff; font-weight: bold; }
+        .nav-item.completed { color: #8bc34a; }
+        .nav-item-icon { margin-right: 10px; font-size: 1.2rem; }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { height: 60px; background-color: var(--bg-card); display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; box-shadow: var(--shadow); z-index: 10; }
+        
+        .content-area { flex: 1; overflow-y: auto; padding: 2rem; scroll-behavior: smooth; }
+        .container { max-width: 900px; margin: 0 auto; }
+
+        /* ================= 卡片與區塊 ================= */
+        .card { background-color: var(--bg-card); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .card-title { display: flex; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+        .card-title i { margin-right: 0.5rem; font-size: 1.2rem; }
+
+        /* 目標與概念區 */
+        .obj-tag { display: inline-block; background-color: rgba(44, 95, 45, 0.1); color: var(--primary); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; margin: 0 0.5rem 0.5rem 0; font-weight: bold; }
+        [data-theme="dark"] .obj-tag { background-color: rgba(151, 188, 98, 0.2); }
+
+        /* 情境案例 */
+        .scenario-box { background-color: rgba(28, 63, 96, 0.05); border-left: 4px solid var(--secondary); padding: 1rem 1.5rem; border-radius: 0 8px 8px 0; margin-bottom: 1rem; }
+        [data-theme="dark"] .scenario-box { background-color: rgba(74, 124, 89, 0.1); border-left-color: var(--primary); }
+
+        /* 錯誤提醒 */
+        .alert-box { background-color: var(--alert-bg); border-left: 4px solid var(--alert-border); padding: 1rem 1.5rem; color: var(--alert-text); border-radius: 0 8px 8px 0; margin-bottom: 1rem; }
+        
+        /* 測驗區 */
+        .quiz-option { display: block; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 0.5rem; cursor: pointer; transition: var(--transition); background-color: var(--bg-body); }
+        .quiz-option:hover { border-color: var(--primary); background-color: rgba(44, 95, 45, 0.05); }
+        .quiz-option input { margin-right: 10px; }
+        .quiz-option.correct { background-color: rgba(39, 174, 96, 0.1); border-color: var(--success); }
+        .quiz-option.wrong { background-color: var(--alert-bg); border-color: var(--alert-border); }
+        
+        .feedback { margin-top: 1rem; padding: 1rem; border-radius: 6px; display: none; font-weight: bold; }
+        .feedback.success { display: block; background-color: rgba(39, 174, 96, 0.1); color: var(--success); }
+        .feedback.error { display: block; background-color: var(--alert-bg); color: var(--alert-text); }
+
+        /* ================= 按鈕與控制 ================= */
+        .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: var(--transition); font-size: 0.95rem; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-primary:disabled { background-color: #ccc; cursor: not-allowed; }
+        .btn-outline { background-color: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background-color: var(--bg-body); }
+
+        .theme-toggle { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-main); }
+        
+        .action-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+        /* ================= 結訓證書 ================= */
+        .certificate { display: none; text-align: center; padding: 3rem; background: linear-gradient(135deg, var(--bg-card), var(--bg-body)); border: 2px solid #D4AF37; border-radius: 12px; margin-top: 2rem; }
+        .cert-title { font-size: 2rem; color: #D4AF37; margin-bottom: 1rem; }
+        .cert-badge { font-size: 4rem; margin-bottom: 1rem; }
+
+        /* ================= 響應式 ================= */
+        .menu-toggle { display: none; background: none; border: none; font-size: 1.5rem; color: var(--text-main); cursor: pointer; }
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: -300px; height: 100%; box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
+            .sidebar.open { left: 0; }
+            .menu-toggle { display: block; }
+        }
+
+        /* 小動畫 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+    </style>
+</head>
+<body>
+
+    <!-- 左側導覽列 -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>生態檢核實務訓練</h2>
+            <div class="progress-container">
+                <div class="progress-text">
+                    <span>學習進度</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-bar"></div>
+                </div>
+            </div>
+        </div>
+        <ul class="nav-list" id="nav-list">
+            <!-- JS 動態生成單元列表 -->
+        </ul>
+    </nav>
+
+    <!-- 右側主內容 -->
+    <main class="main-content">
+        <!-- 頂部工具列 -->
+        <header class="topbar">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button class="menu-toggle" id="menu-toggle">☰</button>
+                <h3 style="margin:0; color: var(--text-main);">自主學習系統儀表板</h3>
+            </div>
+            <div>
+                <button class="theme-toggle" id="theme-toggle" title="切換深淺色模式">🌙</button>
+            </div>
+        </header>
+
+        <!-- 內容區 -->
+        <div class="content-area" id="content-area">
+            <div class="container fade-in" id="dynamic-content">
+                <!-- 歡迎頁面 -->
+                <div class="card" style="text-align: center; padding: 4rem 2rem;">
+                    <h1 style="font-size: 2rem; margin-bottom: 1rem;">歡迎來到生態檢核培訓中心</h1>
+                    <p style="font-size: 1.1rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem;">
+                        本系統專為工程顧問公司新進人員設計。我們將帶你具備批判性思考，跳脫純工程思維，學習如何將生態保育融入工程生命週期中。<br>準備好成為跨域專業人才了嗎？
+                    </p>
+                    <button class="btn btn-primary" onclick="app.loadUnit(0)" style="font-size: 1.2rem; padding: 0.8rem 2rem;">開始學習第一單元</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ================= 資料層：20個核心單元 =================
+        const courseData = [
+            {
+                title: "單元 1：為什麼要生態檢核？制度與政策背景",
+                objectives: ["理解生態檢核的核心精神與政策發展", "釐清生態檢核與環境影響評估(環評)的差異"],
+                core: "生態檢核並非為了「阻擋工程」，而是依據《公共工程生態檢核注意事項》，在工程計畫的生命週期中，強制導入生態專業。其精神在於「資訊公開、民眾參與、生態專業介入」，促成工程與環境的雙贏。不同於環評針對大型開發，生態檢核更著重於日常中小型公共工程的把關。",
+                scenario: "某地方政府欲整治一條野溪，工程師原圖方便規劃全斷面混凝土護岸。因為政策要求執行生態檢核，生態團隊在設計初期即介入，發現該處為特有種魚類棲地，最終說服工程端改用石材與天然底質，成功保全棲地。",
+                mistakes: "最大的迷思：把生態檢核當作「寫報告交差」的橡皮圖章，或者誤以為它等同於門檻極高的環評程序。",
+                quiz: {
+                    question: "關於生態檢核的核心精神，下列何者敘述「錯誤」？",
+                    options: [
+                        "旨在將生態保育思維融入工程生命週期",
+                        "主要目的是為了全面阻擋公共工程開發",
+                        "強調資訊公開與民眾參與",
+                        "要求生態專業人員提早介入工程規劃"
+                    ],
+                    answer: 1 // B
+                }
+            },
+            {
+                title: "單元 2：工程生命週期與生態檢核介入時機",
+                objectives: ["熟悉工程四大生命週期", "掌握各階段生態檢核的重點任務"],
+                core: "工程生命週期分為四階段：<br>1. <b>計畫階段</b>：資料蒐集、確認是否迴避敏感區。<br>2. <b>設計階段</b>：進行現地調查，設計生態友善措施（減輕/縮小）。<br>3. <b>施工階段</b>：落實友善措施，異常狀況停工與通報。<br>4. <b>維護管理階段</b>：成效追蹤與棲地復育觀察。<br><b>黃金準則：生態介入越早，工程變更成本越低！</b>",
+                scenario: "一條公路拓寬案在「施工階段」才發現挖到保育類植物，導致全面停工、變更設計，損失數百萬。若在「計畫階段」套疊圖資或「設計階段」詳實調查，便可提早微調路線避開。",
+                mistakes: "設計都快發包了才找生態人員來「背書」，此時工程配置已定，生態只能做微不足道的補救。",
+                quiz: {
+                    question: "為了達到最佳的生態保育與工程經濟效益，生態專業最理想的介入時機是？",
+                    options: ["完工後的維護管理階段", "施工機具進場時", "計畫與規劃初期階段", "細部設計完成準備發包時"],
+                    answer: 2 // C
+                }
+            },
+            {
+                title: "單元 3：踩進工地前：生態敏感區位與圖資判讀",
+                objectives: ["學會使用政府開放圖資", "判別工程是否座落於法定生態敏感區"],
+                core: "在出發現地前，必須進行「室內作業」。利用 GIS 軟體（如 QGIS）或「環境敏感地區查詢系統」，套疊工程範圍（KML/SHP）。需確認的敏感區包含：國家公園、野生動物保護區、重要棲息環境、保安林、特定水土保持區等。若落入特定範圍，可能有禁建或嚴格開發限制。",
+                scenario: "承辦人員拿到一個水電管線工程，直接去現場看覺得「只是普通的草地」。結果圖資一套疊，發現是「石虎重要棲息環境」，後續的調查強度與友善措施層級瞬間拉高。",
+                mistakes: "未經圖資套疊就盲目去現場調查，可能漏看大尺度的空間限制，或者做白工（該地其實是法定禁建區）。",
+                quiz: {
+                    question: "工程開始前，查核「生態敏感區位」最有效率的工具或方法是？",
+                    options: ["直接打電話問當地里長", "使用 GIS 軟體套疊政府開放環境敏感圖資", "去現場看有沒有野生動物", "在 Google Map 上看有沒有綠色的地方"],
+                    answer: 1
+                }
+            },
+            {
+                title: "單元 4：認識我們的鄰居：陸域與水域生態系概論",
+                objectives: ["分辨陸域與水域環境的關鍵生態特徵", "理解推移帶(Ecotone)的重要性"],
+                core: "<b>陸域環境</b>關注植被覆蓋度、樹冠層、孔隙地等；<b>水域環境</b>關注水質、流速、底質（泥、沙、卵石）及深潭淺瀨的交替。最重要的交界處稱為<b>水陸推移帶（如濱溪帶）</b>，這裡是生物多樣性最高、也是工程（如護岸、擋土牆）最容易破壞的地方。",
+                scenario: "某溝渠改善工程將原本的土溝改為「三面光」（底層與兩側皆為平滑水泥）。結果水流變急、沒有孔隙讓生物躲藏，水陸斷絕，青蛙掉進去爬不出來，形成生態陷阱。",
+                mistakes: "將水跟陸地分開看，忽略了「邊緣效應」。工程切斷了水生動物上岸產卵、陸生動物下水喝水的廊道。",
+                quiz: {
+                    question: "關於「水陸推移帶(濱溪帶)」在生態檢核中的重要性，下列敘述何者正確？",
+                    options: ["生物種類最少，工程可以直接開發", "通常是廢棄物堆積處，無生態價值", "是連接水域與陸域的重要廊道，生物多樣性高，應盡量保留自然狀態", "為了防洪，應全面鋪設不透水混凝土"],
+                    answer: 2
+                }
+            },
+            {
+                title: "單元 5：調查先修班：植物與鳥類基礎調查",
+                objectives: ["掌握植物相樣區調查法", "掌握鳥類沿線鳴聲與目擊調查法"],
+                core: "<b>植物調查</b>通常採用「樣區法」，劃定一定面積（如10x10m），記錄喬木、灌木、草本的種類、胸高直徑(DBH)與覆蓋度，能反映棲地現況。<b>鳥類調查</b>多用「沿線調查法」或「圓圈半徑法」，清晨是最佳時機，高度依賴調查員對鳥音(鳴唱/叫聲)的辨識能力。",
+                scenario: "工程預定地有一排老樹。植物調查不只記下「有樹」，還記錄了樹種、直徑，發現其中一棵為受保護樹木，工程設計因此微調路線，原地保留老樹。",
+                mistakes: "植物調查只看花草，忽略了大樹的樹冠層；鳥類調查選在正中午大太陽下進行（鳥都躲起來了），導致數據掛零。",
+                quiz: {
+                    question: "進行鳥類生態調查時，哪一個時段通常是鳥類最活躍、最容易記錄到數據的黃金時間？",
+                    options: ["正中午 12:00", "清晨日出後兩小時內", "下午 14:00", "深夜 00:00"],
+                    answer: 1
+                }
+            },
+            {
+                title: "單元 6：調查進階班：兩棲爬蟲與哺乳類基礎調查",
+                objectives: ["了解兩爬夜間調查法(夜探)", "認識哺乳類自動相機與痕跡調查法"],
+                core: "<b>兩棲爬蟲類</b>多為夜行性，需配戴頭燈進行「夜間穿越線調查」，藉由反光（Eye shine）、鳴聲（特別是蛙類）來尋找。<b>中大型哺乳類</b>生性機警難目擊，主要仰賴架設「紅外線自動相機」，或記錄排遺、足印、食痕、獸徑等「痕跡調查」。",
+                scenario: "白天在山區道路預定地勘查甚麼都沒看到。調查員架設自動相機一個月後，拍到了食蟹獴與穿山甲在夜間頻繁利用該處的乾溝移動。工程隨後加入了地下動物通道設計。",
+                mistakes: "只安排白天現勘，就斷定該地區「沒有野生動物」，忽略了夜行性動物的存在。",
+                quiz: {
+                    question: "對於機警、難以直接目擊的中大型野生哺乳動物（如山羌、石虎），最常用且干擾最低的調查工具是？",
+                    options: ["紅外線自動相機", "大型捕獸夾", "空拍機近距離追蹤", "大聲廣播吸引牠們"],
+                    answer: 0
+                }
+            },
+            {
+                title: "單元 7：重點對象：保育類、外來種與指標物種辨識",
+                objectives: ["能區分法定保育類等級", "辨識常見強勢外來入侵種", "理解指標物種代表的意義"],
+                core: "調查數據需進一步分類：<br>1. <b>保育類</b>：依《野生動物保育法》分三級（瀕臨絕種、珍貴稀有、其他應予保育），是工程需絕對關注的紅線。<br>2. <b>外來種</b>：如銀合歡、小花蔓澤蘭、綠鬣蜥，工程整地可能加速其擴散，需擬定移除計畫。<br>3. <b>指標物種</b>：如某些水棲昆蟲代表水質清澈，可作為棲地品質的評估基準。",
+                scenario: "河川疏濬工程挖出的土方隨意堆置，結果土方內含有強勢外來種「互花米草」的種子，造成下游河岸全面被入侵。若能先辨識並集中銷毀，便能避免生態浩劫。",
+                mistakes: "遇到外來種覺得「也是生命」而要求工程特意保留，違反了生態平衡原則；或者不認識保育類，將其棲地當作一般荒地剷平。",
+                quiz: {
+                    question: "在工程基地內發現大面積的「小花蔓澤蘭」（被稱為綠色癌症），正確的處置態度是？",
+                    options: ["它是綠色植物，應盡量保留以綠化環境", "它是強勢外來入侵種，應配合工程整地予以連根移除並銷毀", "為它設置生態保護區", "移植到其他國家公園內"],
+                    answer: 1
+                }
+            },
+            {
+                title: "單元 8：裝備與科技：現地踏勘、GPS與軌跡紀錄",
+                objectives: ["熟悉野外調查基本裝備", "能使用 GPS 或手機 App 記錄軌跡與點位"],
+                core: "生態人員的「工程師思維」展現在精準紀錄上。必備裝備：安全帽、反光背心、雨鞋、望遠鏡、圖鑑。數位工具：利用手機 App (如 OruxMaps、綠野遊蹤或 Google Earth) 紀錄<b>航跡(Track)</b>與<b>航點(Waypoint)</b>，確保每一個發現的物種或生態議題都有明確的 TWD97/WGS84 座標。",
+                scenario: "助理在森林裡發現一個珍貴稀有的八色鳥巢，但沒有記錄座標就下山了。隔天工程單位要拉封鎖線保護，卻再也找不到確切位置。",
+                mistakes: "野外安全防護不足（未穿雨鞋防蛇）；依賴大腦記憶位置，報告中的點位「憑感覺」標示，導致工程師無法在 CAD 圖上放樣。",
+                quiz: {
+                    question: "在現地發現重要生態議題（如保育類巢穴）時，當下最重要的數位記錄工作是？",
+                    options: ["立刻發 Instagram 限時動態", "使用 GPS 設備或 App 記錄精確的座標點位(Waypoint)", "打電話請工程師自己來看", "用心記住周圍有哪幾棵樹"],
+                    answer: 1
+                }
+            },
+            {
+                title: "單元 9：證據說話：照片拍攝標準、樣點與路線規劃",
+                objectives: ["建立工程/生態現場拍照的SOP", "學習如何規劃具代表性的調查樣點"],
+                core: "照片是溝通的利器。拍攝要訣：<br>1. <b>全景/遠景</b>：交代環境與工程相對位置。<br>2. <b>中景</b>：呈現生態議題（如被破壞的坡面）。<br>3. <b>近景/特寫</b>：物種特徵或工程細節。<br>所有照片應開啟 GPS 定位浮水印。樣點規劃應涵蓋「施工區」、「影響區」及「對照區」，以利工程前後比對。",
+                scenario: "撰寫報告時，發現現場照片全是植物的花朵特寫，完全看不出這株植物長在工地哪個位置、是否會被怪手挖到，照片失去「檢核」的意義。",
+                mistakes: "忘記拍「施工前」的現況照，導致完工後無法證明生態友善措施是否發揮了「減輕」的作用。",
+                quiz: {
+                    question: "拍攝生態檢核照片時，為了讓工程師了解該物種與工程範圍的關係，最不能缺少的照片視角是？",
+                    options: ["超微距的物種特寫照", "帶有周圍環境與工程相對位置的「全景/遠景照」", "調查員的自拍照", "加上唯美濾鏡的風景照"],
+                    answer: 1
+                }
+            },
+            {
+                title: "單元 10：數據的誕生：生態資料表單填寫與品質控管",
+                objectives: ["熟悉標準生態調查表單欄位", "了解資料品質控管(QC)的重要性"],
+                core: "調查數據的品質決定報告的成敗。表單必填：日期、天氣、調查者、方法、物種名（中/學名）、數量、行為、座標。<b>資料控管(QC)</b>：結束調查當天應立即將紙本或語音轉錄為電子檔（Excel）。這正是展現行政自動化能力的時刻，可利用 Google Forms 或 AppSheet 讓調查員在現場直接輸入，減少轉謄錯誤。",
+                scenario: "將連續三個月的生態資料匯入資料庫時，發現同一個物種被寫成「白鷺鷥」、「小白鷺」、「小鷺」，甚至學名拼錯，導致分析程式報錯，需花大量時間人工清洗資料。",
+                mistakes: "字跡潦草、學名大小寫亂寫（正確應屬名大寫、種名小寫斜體，如 <i>Felis catus</i>）、延遲數週才整理資料導致記憶模糊。",
+                quiz: {
+                    question: "身為喜歡流程最佳化的你，若要提升團隊生態調查資料填寫的品質與效率，下列哪項做法最佳？",
+                    options: ["規定大家用鉛筆寫在廢紙上回辦公室慢慢打字", "導入數位化表單(如 AppSheet)，預設下拉選單與自動帶入座標，減少人工打字錯誤", "不用填表，用講的就好", "只記錄保育類，其他都不用記"],
+                    answer: 1
+                }
+            },
+            {
+                title: "單元 11：辨識衝突：工程行為與生態議題辨識",
+                objectives: ["拆解工程行為帶來的影響", "精準描述生態衝突(議題)"],
+                core: "生態人員不能只懂生物，要懂「怪手在幹嘛」。<br>常見工程影響：<br>- <b>整地/伐木</b>：棲地直接喪失。<br>- <b>開挖/土方堆置</b>：阻斷廊道、水體濁度上升。<br>- <b>夜間施工/噪音</b>：驚擾野生動物。<br>「生態議題」的寫法公式：<b>[工程行為]</b> 導致 <b>[環境改變]</b>，進而影響 <b>[特定對象/生態系]</b>。",
+                scenario: "不良描述：「這裡有石虎，不能蓋。」<br>專業描述：「本案『新設擋土牆工程』將導致『既有天然邊坡水泥化』，進而影響『石虎前往溪流飲水的移動路徑』。」",
+                mistakes: "只列出物種清單，卻無法指出工程哪個環節會對牠們造成威脅，導致工程師不知道要改哪裡。",
+                quiz: {
+                    question: "下列哪一個「生態議題」的描述最專業且具有建設性？",
+                    options: [
+                        "這條水溝裡有青蛙，你們工程很破壞生態",
+                        "施工噪音很大，動物都會跑走",
+                        "護岸『垂直陡建』將導致『水陸廊道中斷』，影響『兩棲類上岸繁殖』的動線",
+                        "這邊樹很多，請全部不要砍"
+                    ],
+                    answer: 2
+                }
+            },
+            {
+                title: "單元 12：風險評估：生態風險分級與影響矩陣",
+                objectives: ["學習評估生態風險的邏輯", "產出風險分級矩陣"],
+                core: "不是所有影響都一樣嚴重。風險評估通常結合「生態敏感度(重要性)」與「工程影響程度」。<br>- <b>高風險</b>：涉及保育類棲地核心區，且工程為大規模不可逆破壞（需強烈迴避）。<br>- <b>中風險</b>：一般棲地且有中度影響（需提減輕對策）。<br>- <b>低風險</b>：既有水泥化環境且影響輕微。",
+                scenario: "在一片已高度水泥化的市區重劃區內做小型水溝修繕，生態重要性低、影響程度小，評為「低風險」。但在原始林開新路，則是「高風險」。區分等級有助於將資源集中在關鍵問題上。",
+                mistakes: "將所有工程一律評為高風險，導致工程單位反彈；或評為低風險卻未提出任何預防措施。",
+                quiz: {
+                    question: "若生態調查發現工地內有「一級保育類動物棲地」，且工程計畫是「全面開挖剷平該區域」，依據影響矩陣，此情境應評估為？",
+                    options: ["低風險", "中風險", "高風險，應優先考量迴避", "無風險"],
+                    answer: 2
+                }
+            },
+            {
+                title: "單元 13：核心解方：迴避、縮小、減輕、補償四項策略",
+                objectives: ["熟記並理解生態保育四大策略(Mitigation Hierarchy)", "能依序套用於實務情境"],
+                core: "這是生態檢核的靈魂，必須<b>依序</b>考量：<br>1. <b>迴避 (Avoid)</b>：最高原則。改變路線或工法，完全不碰敏感區。<br>2. <b>縮小 (Minimize)</b>：無法迴避時，減少開發面積或規模。<br>3. <b>減輕 (Mitigate)</b>：無法縮小，則採用生態工法、生物通道、控制噪音等降低傷害。<br>4. <b>補償 (Compensate)</b>：最後手段。破壞1公頃棲地，在異地還原1公頃（甚至更多）棲地。",
+                scenario: "面臨一棵百年老樹。<br>迴避：道路繞過老樹。<br>縮小：道路縮減車道寬度，減少對樹根的壓迫。<br>減輕：在樹幹包覆保護層避免機具撞擊。<br>補償：真的必須砍伐，在異地種植十棵同種樹木。",
+                mistakes: "一遇到問題，直接跳到「補償」（花錢了事），完全不思考是否能「迴避」。這違反了生態檢核的優先順序。",
+                quiz: {
+                    question: "面對生態敏感區，生態檢核對策的「最高原則（優先順位第一）」是下列何者？",
+                    options: ["補償 (Compensate)", "減輕 (Mitigate)", "縮小 (Minimize)", "迴避 (Avoid)"],
+                    answer: 3
+                }
+            },
+            {
+                title: "單元 14：讀懂工程師的語言：工程圖說與施工配置判讀",
+                objectives: ["具備基本看圖能力(平面、剖面)", "找出圖說中隱藏的生態殺手"],
+                core: "身為顧問公司的行政/企劃，看懂 CAD 轉出來的 PDF 是一大優勢。重點看懂：<br>- <b>平面圖</b>：看懂等高線、工程範圍(紅線)、臨時施工便道(常是破壞主因)。<br>- <b>剖面圖</b>：看懂護岸斜率（太陡動物爬不上來）、是否有水槽設計。<br>- <b>材料表</b>：確認是否使用過多不透水混凝土。",
+                scenario: "生態人員看平面圖，發現主工程雖然避開了敏感林地，但「臨時土方堆置區」與「施工便道」卻直接畫在林地正中央。及時向設計師反映，更改了便道位置。",
+                mistakes: "只看主體工程範圍，忽略了「臨時設施（便道、工寮、沉砂池）」帶來的衍伸性生態破壞。",
+                quiz: {
+                    question: "審查工程圖說時，除了工程主體本身，哪個部分也經常是造成生態破壞的隱形殺手，必須特別注意？",
+                    options: ["圖紙的邊框設計", "圖名與比例尺", "臨時施工便道與土方堆置區的配置位置", "工程師的簽名"],
+                    answer: 2
+                }
+            },
+            {
+                title: "單元 15：共存的藝術：生態友善措施設計與實務案例",
+                objectives: ["認識常見的生態友善設施", "理解尺寸與材質對物種的意義"],
+                core: "友善措施不能是「人類覺得好用」就好。<br>- <b>動物通道/廊道</b>：涵管大小需符合目標物種體型，底部需鋪設天然土壤。<br>- <b>生態廊道護岸</b>：1:2 或更緩的緩坡，或設置階梯/原木供動物攀爬（動物坡道）。<br>- <b>孔隙營造</b>：使用石籠、拋石取代平滑混凝土，提供魚蝦躲藏空間。",
+                scenario: "某農路水溝設了「動物逃生坡道」，但因為表面抹得太過光滑，且坡度高達 60 度，掉下去的青蛙和烏龜根本爬不上去。後來改用表面粗糙的石塊並放緩坡度才有效。",
+                mistakes: "設計了措施，但尺寸錯誤或缺乏維護。例如為石虎設計了地下通道，但通道口卻被雜草和垃圾堵死。",
+                quiz: {
+                    question: "設計水溝內的「動物逃生坡道」時，下列哪個設計考量是正確的？",
+                    options: ["表面應盡量拋光打滑，比較美觀", "坡度應盡量陡峭以節省空間", "坡面應具備粗糙度（如保留混凝土紋理或嵌石），且坡度不宜過陡，方便動物攀爬", "坡道寬度只要1公分就好"],
+                    answer: 2
+                }
+            },
+            {
+                title: "單元 16：轉譯與產出：生態檢核報告撰寫邏輯與架構",
+                objectives: ["掌握生態檢核報告的標準架構", "學會撰寫具體可執行的建議"],
+                core: "報告不是學術論文，重點是「讓工程師知道該怎麼做」。標準架構：<br>1. <b>工程背景</b>（在哪、做什麼）<br>2. <b>調查結果</b>（有什麼敏感對象）<br>3. <b>課題評估</b>（哪裡會衝突）<br>4. <b>因應對策</b>（明確指示，包含圖面配置、預算估列）。建議必須<b>具體、量化、可執行</b>。",
+                scenario: "不好的建議：「請加強生態保育」。<br>好的建議：「請於 0k+100 處右岸，設置寬度至少 50cm、坡度 1:3 且表面粗糙之動物逃生坡道，並編列 5 萬元維護預算。」",
+                mistakes: "寫了 50 頁的物種名錄，但「因應對策」只有短短一行字，對工程設計完全沒有實質幫助。",
+                quiz: {
+                    question: "在撰寫生態檢核報告的「因應對策」時，下列哪一種寫法對工程設計最有幫助？",
+                    options: ["「請大家愛護小動物」", "「建議盡量採用生態工法，詳細由工程師自行想像」", "「應保護自然環境，減少破壞」", "「於特定樁號設置孔洞直徑 20cm 之涵管供中小型哺乳類通行，並附上設計簡圖」"],
+                    answer: 3
+                }
+            },
+            {
+                title: "單元 17：跨域對話：跨部門溝通、民眾參與與會議紀錄",
+                objectives: ["學習與工程師及當地民眾溝通的技巧", "掌握會議紀錄的關鍵重點"],
+                core: "妳的 MBTI (INFP) 賦予妳很強的同理心，這在溝通上是優勢！<br>- <b>對工程師</b>：用數據與圖面溝通，理解他們的成本與工期壓力。<br>- <b>對民眾/NGO</b>：生態檢核強調「資訊公開」，需辦理地方說明會。傾聽在地人（如老農）對環境歷史的了解，他們常知道哪裡會淹水、哪裡有特定動物。<br><b>會議紀錄</b>：明確記下「誰、何時、做什麼變更」。",
+                scenario: "地方說明會上，NGO 強烈抗議開發。生態檢核人員作為橋樑，將 NGO 在意的「特定老樹」具體標示在圖面上，並與工程師協調出「微調路線保留老樹」的方案，成功化解衝突。",
+                mistakes: "帶著生態優越感指責工程師破壞環境，導致雙方對立；或在民眾參與時敷衍了事，未將民眾意見納入報告。",
+                quiz: {
+                    question: "辦理生態檢核「民眾參與/地方說明會」時，最適當的態度與做法是？",
+                    options: ["單向宣導，不給民眾發問時間", "虛心傾聽在地居民與 NGO 的意見，將具體生態議題納入設計檢討", "覺得民眾都不懂，不需要理會", "只邀請贊成工程的人來開會"],
+                    answer: 1
+                }
+            },
+            {
+                title: "單元 18：施工中的守護：施工中生態檢核與異常處理",
+                objectives: ["了解施工階段生態檢核人員(施工生態代表)的職責", "掌握異常狀況的停工與通報機制"],
+                core: "設計圖畫得再好，施工沒照做都是白搭。施工期間需不定期巡查（查驗點）：<br>1. <b>防護圍籬</b>是否確實搭設。<br>2. <b>樹木保護區</b>是否有重機具違規駛入或堆放土方。<br>3. <b>外來種</b>移除是否確實。<br><b>異常通報</b>：若施工中挖到未預期的保育類（如黑熊、石虎），需立即要求停工，通報業主與生態專家評估。",
+                scenario: "怪手司機為了貪圖方便，將廢土倒在圖說標示的「保留區」內。駐地生態助理巡查發現，立刻拍照存證，要求承包商依約清除，避免了棲地被掩埋。",
+                mistakes: "設計完就結案，施工期間完全不去現場；或看到違規不敢要求停工，失去檢核意義。",
+                quiz: {
+                    question: "施工期間，若怪手司機挖到一個巢穴，裡面有疑似保育類的穿山甲，現場人員應立即採取什麼行動？",
+                    options: ["趕快把牠抓去賣", "當作沒看到繼續挖", "立即暫停該區施工，設置封鎖線，並通報生態檢核人員或相關單位", "拍照發臉書，然後繼續施工"],
+                    answer: 2
+                }
+            },
+            {
+                title: "單元 19：完工不是結束：維護管理階段的生態追蹤",
+                objectives: ["理解後續監測的重要性", "評估生態友善措施的實際成效"],
+                core: "工程完工啟用後，需進行 1~3 年的「生態監測」。<br>目標：<br>1. <b>驗證對策成效</b>：架設自動相機看動物有沒有走我們設計的通道。<br>2. <b>植栽復育狀況</b>：種下去的樹有沒有活？是否被外來種入侵？<br>如果發現通道設計不良動物不走，可作為未來其他工程設計的修正依據（Adaptive Management，適應性管理）。",
+                scenario: "監測人員發現動物通道內積水嚴重，導致動物不願意走。經過回報，工程單位派人清淤並改善排水，通道才恢復功能。",
+                mistakes: "完工剪綵後就完全不管，導致耗資百萬的生態池變成一攤死水，或者種的樹死光變成荒地。",
+                quiz: {
+                    question: "為什麼工程完工後，還需要進行維護管理階段的「生態監測」？",
+                    options: ["因為合約規定要消耗預算", "為了驗證生態友善設施是否真正發揮功效，並作為後續改善依據", "為了找碴開罰單", "只是為了寫學術論文"],
+                    answer: 1
+                }
+            },
+            {
+                title: "單元 20：擁抱科技：數位工具、AI輔助與自動化流程",
+                objectives: ["💡特別篇：發揮你的工程/行政跨域能力", "認識 AI 與自動化在生態檢核的應用"],
+                core: "身為喜歡自動化流程的妳，這裡大有可為！<br>1. <b>資料自動化</b>：用 Python 或 Power Automate 將現場 App 蒐集的數據自動拋轉成報告表格。<br>2. <b>AI 影像辨識</b>：訓練模型自動過濾數萬張自動相機照片，標記動物種類。<br>3. <b>無人機(UAV)與 LiDAR</b>：建建立 3D 模型，精準計算土方量與植被覆蓋度。<br>跳脫傳統「純手工」生態調查，運用科技解決顧問業的人力瓶頸！",
+                scenario: "以前助理每個月要花三天時間看自動相機照片並打字建檔。妳寫了一支 Python 腳本，串接開源的 AI 辨識模型，一小時內完成 90% 的照片分類，並自動產出 Excel 樞紐分析表，讓團隊驚豔。",
+                mistakes: "抗拒學習新工具，認為生態調查只能靠傳統紙筆與肉眼，導致行政作業繁瑣、效率低下。",
+                quiz: {
+                    question: "身為具備創新思維的新一代生態人員，面對每個月數萬張的自動相機監測照片，最有效率的處理方式是？",
+                    options: ["全部印出來一張一張用肉眼看", "導入 AI 影像辨識技術進行初步篩選，並利用程式自動化產出報表", "隨便挑幾張看就好，其他刪掉", "外包給不知名的工讀生隨便打"],
+                    answer: 1
+                }
+            }
+        ];
+
+        // ================= 狀態管理 =================
+        const appState = {
+            currentUnit: 0,
+            completedUnits: JSON.parse(localStorage.getItem('ecoCheckProgress')) || [],
+            theme: localStorage.getItem('ecoCheckTheme') || 'light'
+        };
+
+        // ================= DOM 元素 =================
+        const dom = {
+            navList: document.getElementById('nav-list'),
+            dynamicContent: document.getElementById('dynamic-content'),
+            progressBar: document.getElementById('progress-bar'),
+            progressPercent: document.getElementById('progress-percent'),
+            themeToggle: document.getElementById('theme-toggle'),
+            sidebar: document.getElementById('sidebar'),
+            menuToggle: document.getElementById('menu-toggle')
+        };
+
+        // ================= 應用程式邏輯 =================
+        const app = {
+            init() {
+                this.applyTheme(appState.theme);
+                this.renderSidebar();
+                this.updateProgress();
+                this.bindEvents();
+                // 預設不自動載入單元，讓使用者看歡迎頁，除非是接續學習
+            },
+
+            bindEvents() {
+                dom.themeToggle.addEventListener('click', () => {
+                    const newTheme = appState.theme === 'light' ? 'dark' : 'light';
+                    this.applyTheme(newTheme);
+                });
+
+                dom.menuToggle.addEventListener('click', () => {
+                    dom.sidebar.classList.toggle('open');
+                });
+            },
+
+            applyTheme(theme) {
+                appState.theme = theme;
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ecoCheckTheme', theme);
+                dom.themeToggle.innerText = theme === 'light' ? '🌙' : '☀️';
+            },
+
+            renderSidebar() {
+                dom.navList.innerHTML = '';
+                courseData.forEach((unit, index) => {
+                    const li = document.createElement('li');
+                    const isCompleted = appState.completedUnits.includes(index);
+                    const isActive = appState.currentUnit === index;
+                    
+                    li.className = `nav-item ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}`;
+                    // 針對多行文字微調對齊方式
+                    li.style.alignItems = 'flex-start'; 
+                    li.onclick = () => {
+                        this.loadUnit(index);
+                        if(window.innerWidth <= 768) dom.sidebar.classList.remove('open');
+                    };
+                    
+                    // 將 unit.title.split('：')[0] 改為完整的 unit.title，並加上行高讓多行文字更好閱讀
+                    li.innerHTML = `
+                        <span class="nav-item-icon" style="margin-top: 2px;">${isCompleted ? '☑' : '☐'}</span>
+                        <span style="line-height: 1.4;">${unit.title}</span>
+                    `;
+                    dom.navList.appendChild(li);
+                });
+            },
+
+            updateProgress() {
+                const total = courseData.length;
+                const completed = appState.completedUnits.length;
+                const percent = Math.round((completed / total) * 100);
+                
+                dom.progressBar.style.width = `${percent}%`;
+                dom.progressPercent.innerText = `${percent}%`;
+
+                if (percent === 100) {
+                    this.checkGraduation();
+                }
+            },
+
+            loadUnit(index) {
+                appState.currentUnit = index;
+                const unit = courseData[index];
+                
+                // 重新渲染 Sidebar active 狀態
+                this.renderSidebar();
+
+                let objectivesHtml = unit.objectives.map(obj => `<span class="obj-tag"># ${obj}</span>`).join('');
+                let optionsHtml = unit.quiz.options.map((opt, i) => `
+                    <label class="quiz-option" onclick="app.checkAnswer(${index}, ${i}, this)">
+                        <input type="radio" name="quiz" value="${i}"> ${opt}
+                    </label>
+                `).join('');
+
+                const contentHtml = `
+                    <div class="fade-in">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 1.5rem;">${unit.title}</h2>
+                        
+                        <div class="card">
+                            <div class="card-title"><i>🎯</i> <h3>學習目標</h3></div>
+                            <div>${objectivesHtml}</div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title"><i>📖</i> <h3>核心概念說明</h3></div>
+                            <p>${unit.core}</p>
+                        </div>
+
+                        <div class="scenario-box">
+                            <h4 style="margin-top:0; color: var(--secondary);">💼 實務情境案例</h4>
+                            <p style="margin:0;">${unit.scenario}</p>
+                        </div>
+
+                        <div class="alert-box">
+                            <h4 style="margin-top:0; color: var(--alert-text);">⚠️ 常見錯誤提醒</h4>
+                            <p style="margin:0;">${unit.mistakes}</p>
+                        </div>
+
+                        <div class="card" style="border-left: 4px solid var(--primary-light);">
+                            <div class="card-title"><i>📝</i> <h3>隨堂小測驗</h3></div>
+                            <p><strong>${unit.quiz.question}</strong></p>
+                            <div id="quiz-options">${optionsHtml}</div>
+                            <div id="quiz-feedback" class="feedback"></div>
+                        </div>
+
+                        <div class="action-bar">
+                            <button class="btn btn-outline" onclick="app.loadUnit(${Math.max(0, index - 1)})" ${index === 0 ? 'disabled' : ''}>← 上一單元</button>
+                            <button id="btn-complete" class="btn btn-primary" onclick="app.markCompleted(${index})" style="display: ${appState.completedUnits.includes(index) ? 'block' : 'none'};">✓ 標示為已完成並前往下一單元</button>
+                            <button class="btn btn-outline" onclick="app.loadUnit(${Math.min(courseData.length - 1, index + 1)})" ${index === courseData.length - 1 ? 'disabled' : ''}>下一單元 →</button>
+                        </div>
+                    </div>
+                `;
+
+                dom.dynamicContent.innerHTML = contentHtml;
+                
+                // 如果已經完成過，顯示通過訊息
+                if(appState.completedUnits.includes(index)) {
+                     const feedback = document.getElementById('quiz-feedback');
+                     feedback.innerText = "⭐ 您已通過此單元測驗。";
+                     feedback.className = "feedback success";
+                }
+                
+                // 回到頂部
+                document.querySelector('.content-area').scrollTop = 0;
+            },
+
+            checkAnswer(unitIndex, selectedOption, labelElement) {
+                if(appState.completedUnits.includes(unitIndex)) return; // 已完成不再重複作答
+
+                const unit = courseData[unitIndex];
+                const feedback = document.getElementById('quiz-feedback');
+                const btnComplete = document.getElementById('btn-complete');
+                const allLabels = document.querySelectorAll('.quiz-option');
+
+                // 重置所有樣式
+                allLabels.forEach(l => l.classList.remove('correct', 'wrong'));
+                
+                // 選中 radio
+                labelElement.querySelector('input').checked = true;
+
+                if (selectedOption === unit.quiz.answer) {
+                    labelElement.classList.add('correct');
+                    feedback.innerText = "✅ 答對了！非常優秀的判斷。";
+                    feedback.className = "feedback success";
+                    btnComplete.style.display = "block";
+                    // 加一點小動畫提示可以點擊完成
+                    btnComplete.classList.add('fade-in');
+                } else {
+                    labelElement.classList.add('wrong');
+                    feedback.innerText = "❌ 答錯囉，請再仔細思考一下核心概念或實務案例喔！";
+                    feedback.className = "feedback error";
+                    btnComplete.style.display = "none";
+                }
+            },
+
+            markCompleted(index) {
+                if (!appState.completedUnits.includes(index)) {
+                    appState.completedUnits.push(index);
+                    localStorage.setItem('ecoCheckProgress', JSON.stringify(appState.completedUnits));
+                    this.updateProgress();
+                    this.renderSidebar();
+                }
+                
+                // 前往下一單元或顯示證書
+                if (index < courseData.length - 1) {
+                    this.loadUnit(index + 1);
+                } else {
+                    this.checkGraduation();
+                }
+            },
+
+            checkGraduation() {
+                if (appState.completedUnits.length === courseData.length) {
+                    const certHtml = `
+                        <div class="fade-in certificate" style="display:block;">
+                            <div class="cert-badge">🏆</div>
+                            <h1 class="cert-title">結訓證書</h1>
+                            <p style="font-size: 1.2rem; margin-bottom: 2rem;">
+                                恭喜您完成全部 20 個單元的「生態檢核實務訓練」！
+                            </p>
+                            <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem;">
+                                您已具備跳脫傳統工程框架的視野，理解了四大保育策略，並掌握了現地調查與風險判讀的基礎。期待您未來運用科技與創新思維，在顧問業推動更高效、友善的自動化生態檢核流程！
+                            </p>
+                            <button class="btn btn-primary" onclick="app.resetProgress()">重新開始課程</button>
+                        </div>
+                    `;
+                    dom.dynamicContent.innerHTML = certHtml;
+                }
+            },
+
+            resetProgress() {
+                if(confirm("確定要清除所有學習紀錄並重新開始嗎？")) {
+                    appState.completedUnits = [];
+                    localStorage.removeItem('ecoCheckProgress');
+                    this.updateProgress();
+                    this.renderSidebar();
+                    this.loadUnit(0);
+                }
+            }
+        };
+
+        // 啟動應用程式
+        window.onload = () => {
+            app.init();
+        };
+
+    </script>
+</body>
+</html>
